@@ -692,6 +692,83 @@ int rmdir (const char *driver, const char *destDirPath) {
  */
 int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     // TODO in lab2
+     FILE *file = NULL;
+    char tmp = 0;
+    int length = 0;
+    int cond = 0;
+    int ret = 0;
+    int size = 0;
+    SuperBlock superBlock;
+    int fatherInodeOffset = 0;
+    int destInodeOffset = 0;
+    Inode fatherInode;
+    Inode destInode;
+    if (driver == NULL) {
+        printf("driver == NULL.\n");
+        return -1;
+    }
+    file = fopen(driver, "r+");
+    if (file == NULL) {
+        printf("Failed to open driver.\n");
+        return -1;
+    }
+    ret = readSuperBlock(file, &superBlock);
+    if (ret == -1) {
+        printf("Failed to load SuperBlock.\n");
+        fclose(file);
+        return -1;
+    }
+    if (destDirPath == NULL) {
+        printf("destDirPath == NULL");
+        fclose(file);
+        return -1;
+    }
+    length = stringLen(destDirPath);
+    if (destDirPath[length - 1] == '/') {
+        cond = 1;
+        *((char*)destDirPath + length - 1) = 0;
+    }
+    ret = stringChrR(destDirPath, '/', &size);
+    if (ret == -1) {
+        printf("Incorrect destination file path.\n");
+        fclose(file);
+        return -1;
+    }
+    tmp = *((char*)destDirPath + size + 1);
+    *((char*)destDirPath + size + 1) = 0;
+    ret = readInode(file, &superBlock, &fatherInode, &fatherInodeOffset, destDirPath);
+    *((char*)destDirPath + size + 1) = tmp;
+    if (ret == -1) {
+        printf("Failed to read father inode.\n");
+        if (cond == 1)
+            *((char*)destDirPath + length - 1) = '/';
+        fclose(file);
+        return -1;
+    }
+    ret = allocInode(file, &superBlock, &fatherInode, fatherInodeOffset,
+        &destInode, &destInodeOffset, destDirPath + size + 1, DIRECTORY_TYPE);
+    if (ret == -1) {
+        printf("Failed to allocate inode.\n");
+        if (cond == 1)
+            *((char*)destDirPath + length - 1) = '/';
+        fclose(file);
+        return -1;
+    }
+    ret = initDir(file, &superBlock, &fatherInode, fatherInodeOffset,
+        &destInode, destInodeOffset);
+    if (ret == -1) {
+        printf("Failed to initialize dir.\n");
+        if (cond == 1)
+            *((char*)destDirPath + length - 1) = '/';
+        fclose(file);
+        return -1;
+    }
+    if (cond == 1)
+        *((char*)destDirPath + length - 1) = '/';
+    
+    printf("mkdir %s\n", destDirPath);
+    printf("MKDIR success.\n%d inodes and %d data blocks available.\n", superBlock.availInodeNum, superBlock.availBlockNum);
+    fclose(file);
     return 0;
 }
 
