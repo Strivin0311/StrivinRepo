@@ -704,11 +704,11 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     int destInodeOffset = 0;
     Inode fatherInode;
     Inode destInode;
-    // add src INode and its fatherInode and their offsets
-    int srcfatherInodeOffset = 0;
-    int srcInodeOffset = 0;
-    Inode srcInode;
-    Inode srcfatherInode;
+    /* add src INode and its offset  */
+    //int srcfatherInodeOffset = 0;
+    //int srcInodeOffset = 0;
+    //Inode srcInode;
+    //Inode srcfatherInode;
 
     SuperBlock superBlock;
 
@@ -730,7 +730,7 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
         return -1;
     }
 
-    /* Process srcFilePath and destFilePath */
+    /* Set srcFilePath and destFilePath */
      if (srcFilePath == NULL) {
         printf("srcFilePath == NULL");
         fclose(file);
@@ -755,7 +755,7 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     }
 
 
-    /* find destFilePath's fatherInode*/
+    /* read destFilePath's fatherInode*/
     ret = stringChrR(destFilePath, '/', &size);
     if (ret == -1) {
         printf("Incorrect destination file path.\n");
@@ -769,8 +769,10 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     *((char*)destFilePath + size + 1) = tmp;
     if (ret == -1) {
         printf("Failed to read father inode.\n");
+        if (srccond == 1)
+           *((char*)srcFilePath + srclength - 1) = '/';
         if (destcond == 1)
-            *((char*)destFilePath + destlength - 1) = '/';
+           *((char*)destFilePath + destlength - 1) = '/';
         fclose(file);
         return -1;
     }
@@ -783,24 +785,26 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
         &destInode, &destInodeOffset, destFilePath + size + 1, REGULAR_TYPE);
     if (ret == -1) {
         printf("Failed to allocate inode.\n");
+        if (srccond == 1)
+           *((char*)srcFilePath + srclength - 1) = '/';
         if (destcond == 1)
-            *((char*)destFilePath + destlength - 1) = '/';
+           *((char*)destFilePath + destlength - 1) = '/';
         fclose(file);
         return -1;
     }
 
-    /* read srcfatherInode and find src INode */
-    tmp = *((char*)srcFilePath + size + 1);
-    *((char*)srcFilePath + size + 1) = 0;
-    ret = readInode(file, &superBlock, &srcfatherInode, &srcfatherInodeOffset, srcFilePath);
-    *((char*)destFilePath + size + 1) = tmp;
+    /* copy srcFile's data to destFile's */
+    ret = copyData (driver, srcFilePath, &superBlock, &destInode, &destInodeOffset);
     if (ret == -1) {
-        printf("Failed to read father inode.\n");
+        printf("Failed to copy data.\n");
+        if (srccond == 1)
+           *((char*)srcFilePath + srclength - 1) = '/';
         if (destcond == 1)
-            *((char*)destFilePath + destlength - 1) = '/';
+           *((char*)destFilePath + destlength - 1) = '/';
         fclose(file);
         return -1;
     }
+
 
     /*
     ret = initDir(file, &superBlock, &fatherInode, fatherInodeOffset,
@@ -814,6 +818,8 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     }*/
 
 
+    if (srccond == 1)
+        *((char*)srcFilePath + srclength - 1) = '/';
     if (destcond == 1)
         *((char*)destFilePath + destlength - 1) = '/';
     
