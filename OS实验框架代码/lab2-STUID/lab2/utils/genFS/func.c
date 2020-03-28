@@ -696,14 +696,19 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     char tmp = 0;
     int srclength = 0;
     int destlength = 0;
-    int cond = 0;
+    int srccond = 0;
+    int destcond = 0;
     int ret = 0;
     int size = 0;
-    SuperBlock superBlock;
-    //int fatherInodeOffset = 0;
+    int fatherInodeOffset = 0;
     int destInodeOffset = 0;
-    //Inode fatherInode;
+    Inode fatherInode;
     Inode destInode;
+    // add src INode and its fatherInode
+    Inode srcInode;
+    Inode srcfatherInode;
+
+    SuperBlock superBlock;
 
     /* open dirver file */
     if (driver == NULL) {
@@ -738,49 +743,66 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     srclength = stringLen(srcFilePath);
     destlength = stringLen(destFilePath);
 
+    if (srcFilePath[srclength - 1] == '/') {
+        srccond = 1;
+        *((char*)srcFilePath + srclength - 1) = 0;
+    }
     if (destFilePath[destlength - 1] == '/') {
-        cond = 1;
+        destcond = 1;
         *((char*)destFilePath + destlength - 1) = 0;
     }
 
 
-
+    /* find destFilePath's fatherInode*/
     ret = stringChrR(destFilePath, '/', &size);
     if (ret == -1) {
         printf("Incorrect destination file path.\n");
         fclose(file);
         return -1;
     }
+
     tmp = *((char*)destFilePath + size + 1);
     *((char*)destFilePath + size + 1) = 0;
     ret = readInode(file, &superBlock, &fatherInode, &fatherInodeOffset, destFilePath);
     *((char*)destFilePath + size + 1) = tmp;
     if (ret == -1) {
         printf("Failed to read father inode.\n");
-        if (cond == 1)
+        if (destcond == 1)
             *((char*)destFilePath + destlength - 1) = '/';
         fclose(file);
         return -1;
     }
+
+    /* add destFile's DirEntry to its fatherInode 
+     * with REGULAR_TYPE 
+     * and intialize destFile's INode
+     */
     ret = allocInode(file, &superBlock, &fatherInode, fatherInodeOffset,
-        &destInode, &destInodeOffset, destFilePath + size + 1, DIRECTORY_TYPE);
+        &destInode, &destInodeOffset, destFilePath + size + 1, REGULAR_TYPE);
     if (ret == -1) {
         printf("Failed to allocate inode.\n");
-        if (cond == 1)
+        if (destcond == 1)
             *((char*)destFilePath + destlength - 1) = '/';
         fclose(file);
         return -1;
     }
+
+    /* read srcfatherInode and find src INode */
+    
+
+    /*
     ret = initDir(file, &superBlock, &fatherInode, fatherInodeOffset,
         &destInode, destInodeOffset);
     if (ret == -1) {
         printf("Failed to initialize dir.\n");
-        if (cond == 1)
+        if (destcond == 1)
             *((char*)destFilePath + destlength - 1) = '/';
         fclose(file);
         return -1;
-    }
-    if (cond == 1)
+    }*/
+
+
+    if (destcond == 1)
         *((char*)destFilePath + destlength - 1) = '/';
     
     printf("cpfile %s\n", destFilePath);
