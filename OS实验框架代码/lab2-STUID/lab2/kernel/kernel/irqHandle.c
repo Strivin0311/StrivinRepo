@@ -84,18 +84,12 @@ void syscallPrint(struct TrapFrame *tf) {
 	uint16_t data = 0;
 	asm volatile("movw %0, %%es"::"m"(sel));
 	for (i = 0; i < size; i++) {
+		/* get character to print */
 		asm volatile("movb %%es:(%1), %0":"=r"(character):"r"(str+i));
 		// TODO in lab2
-		if(character == '\n') {
-			displayRow++;
-			displayCol=0;
-			if(displayRow==25){
-				displayRow=24;
-				displayCol=0;
-				scrollScreen();
-			}
-		}
-		else {
+
+		/* if print normal char then print and get to next pos*/
+		if(character != '\n') {
 			data = character | (0x0c << 8);
 			pos = (80*displayRow+displayCol)*2;
 			asm volatile("movw %0, (%1)"::"r"(data),"r"(pos+0xb8000));
@@ -103,14 +97,26 @@ void syscallPrint(struct TrapFrame *tf) {
 			if(displayCol==80){
 				displayRow++;
 				displayCol=0;
-				if(displayRow==25){
-					displayRow=24;
-					displayCol=0;
-					scrollScreen();
-					}
 			}
+			
+		}
+
+		/* if print '\n' then get to the begnning of next line  */
+		else {
+			    displayRow++;
+			    displayCol=0;
+			}
+			
+		/* if fullScreen then scrollScreen */
+		if(displayRow==25){
+			displayRow=24;
+			displayCol=0;
+			scrollScreen();
 		}
 	}
+
+		
+}
 	
 	updateCursor(displayRow, displayCol);
 	//TODO take care of return value
