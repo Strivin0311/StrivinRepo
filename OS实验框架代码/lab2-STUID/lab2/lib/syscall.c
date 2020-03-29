@@ -71,10 +71,75 @@ void printf(const char *format,...){
 	char *string=0;
 	char character=0;
 	while(format[i]!=0){
-		buffer[count]=format[i];
-		count++;
-		//TODO in lab2
+		// TODO in lab2
+
+        /* if possibly needed to change format */
+		if(format[i] == '%'){
+			  state = 1;  
+              i++;
+			  switch(format[i]){
+                case 'd':   // turn decimal to Str
+				index++;
+		        paraList += sizeof(int);
+		        decimal = *(int*)paraList;
+				count=dec2Str(decimal,buffer,(uint32_t)MAX_BUFFER_SIZE,count);
+				i++;
+				break;
+
+		        case 'x': // turn hexadecimal to Str
+				index++;
+				paraList += sizeof(int);
+				hexadecimal = *(uint32_t*)paraList;
+				count=hex2Str(hexadecimal,buffer,(uint32_t)MAX_BUFFER_SIZE,count);
+				i++;
+                break;
+
+		        case 's':  // turn string to Str
+				index++;
+				paraList += sizeof(int);
+				string = *(char**)paraList;
+				count=str2Str(string,buffer,(uint32_t)MAX_BUFFER_SIZE,count);
+				i++;
+                break;
+
+		        case 'c':  // write char to Str
+				index++;
+				paraList += sizeof(int);
+				character = *(char*)paraList;
+				buffer[count]=character;
+				count++;
+				i++;
+                break;
+
+		        default:   // just '%'
+				i--;
+				buffer[count]=format[i];
+		        count++;
+			    /* if buffer full then syscall_write buffer */
+		        if(count==MAX_BUFFER_SIZE) {
+		            syscall(SYS_WRITE, STD_OUT, (uint32_t)buffer, (uint32_t)MAX_BUFFER_SIZE, 0, 0);
+		            count=0;
+		        }
+				i++;
+				break;
+		    }
+        }
+		/* if normal format then write to buffer */
+		else
+		{
+			state = 0;
+            buffer[count]=format[i];
+		    count++;
+			/* if buffer full then syscall_write buffer */
+		    if(count==MAX_BUFFER_SIZE) {
+		      syscall(SYS_WRITE, STD_OUT, (uint32_t)buffer, (uint32_t)MAX_BUFFER_SIZE, 0, 0);
+		      count=0;
+		    }
+			i++;
+		}
 	}
+	
+	/* print the rest of buffer */
 	if(count!=0)
 		syscall(SYS_WRITE, STD_OUT, (uint32_t)buffer, (uint32_t)count, 0, 0);
 }
