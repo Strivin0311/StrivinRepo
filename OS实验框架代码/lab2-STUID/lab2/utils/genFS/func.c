@@ -795,10 +795,11 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
         return -1;
     }
 
-    /* copy srcFile's data to destFile's */
+    /* get srcFile and copy its data to destFile's */
     srcfile = fopen(srcFilePath, "r+");
     if (srcfile == NULL) {
         printf("Failed to open srcFile.\n");
+        fclose(file);
         return -1;
     }
     ret = copyData (file, srcfile, &superBlock, &destInode, &destInodeOffset);
@@ -809,6 +810,7 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
         if (destcond == 1)
            *((char*)destFilePath + destlength - 1) = '/';
         fclose(file);
+        fclose(srcfile);
         return -1;
     }
 
@@ -833,6 +835,7 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     printf("cpfile %s\n", destFilePath);
     printf("COPY success.\n%d inodes and %d data blocks available.\n", superBlock.availInodeNum, superBlock.availBlockNum);
     fclose(file);
+    fclose(srcfile);
     return 0;
 }
 
