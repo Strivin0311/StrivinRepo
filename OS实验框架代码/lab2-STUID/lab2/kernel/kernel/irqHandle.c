@@ -60,8 +60,8 @@ void timerHandle(struct TrapFrame *tf) {
 
 void keyboardHandle(struct TrapFrame *tf) {
 	// TODO in lab2
-	char character = getChar(getKeyCode());
-
+	char character = getChar(getKeyCode());  //get keychar
+    putChar(character);  // put keychar
 	return;
 }
 
