@@ -802,7 +802,7 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
         fclose(file);
         return -1;
     }
-    ret = copyData (file, srcfile, &superBlock, &destInode, &destInodeOffset);
+    ret = copyData (file, srcfile, &superBlock, &destInode, destInodeOffset);
     if (ret == -1) {
         printf("Failed to copy data.\n");
         if (srccond == 1)

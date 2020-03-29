@@ -65,7 +65,7 @@ void printf(const char *format,...){
 	int count=0; // buffer index
 	int index=0; // parameter index
 	void *paraList=(void*)&format; // address of format in stack
-	int state=0; // 0: legal character; 1: '%'; 2: illegal format
+	//int state=0; // 0: legal character; 1: '%'; 2: illegal format
 	int decimal=0;
 	uint32_t hexadecimal=0;
 	char *string=0;
@@ -75,7 +75,7 @@ void printf(const char *format,...){
 
         /* if possibly needed to change format */
 		if(format[i] == '%'){
-			  state = 1;  
+			 // state = 1;  
               i++;
 			  switch(format[i]){
                 case 'd':   // turn decimal to Str
@@ -127,7 +127,7 @@ void printf(const char *format,...){
 		/* if normal format then write to buffer */
 		else
 		{
-			state = 0;
+			//state = 0;
             buffer[count]=format[i];
 		    count++;
 			/* if buffer full then syscall_write buffer */

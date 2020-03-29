@@ -106,7 +106,7 @@ void syscallPrint(struct TrapFrame *tf) {
 			    displayRow++;
 			    displayCol=0;
 			}
-			
+
 		/* if fullScreen then scrollScreen */
 		if(displayRow==25){
 			displayRow=24;
@@ -115,13 +115,11 @@ void syscallPrint(struct TrapFrame *tf) {
 		}
 	}
 
-		
-}
-	
 	updateCursor(displayRow, displayCol);
 	//TODO take care of return value
-	return;
+	return;	
 }
+
 
 void GProtectFaultHandle(struct TrapFrame *tf){
 	assert(0);
