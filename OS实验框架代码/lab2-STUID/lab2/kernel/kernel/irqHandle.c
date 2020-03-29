@@ -60,7 +60,8 @@ void timerHandle(struct TrapFrame *tf) {
 
 void keyboardHandle(struct TrapFrame *tf) {
 	// TODO in lab2
-	getChar(getKeyCode());
+	char character = getChar(getKeyCode());
+
 	return;
 }
 
@@ -106,10 +107,14 @@ void syscallPrint(struct TrapFrame *tf) {
 					displayRow=24;
 					displayCol=0;
 					scrollScreen();
+					}
+			}
+		}
 	}
 	
 	updateCursor(displayRow, displayCol);
 	//TODO take care of return value
+	return;
 }
 
 void GProtectFaultHandle(struct TrapFrame *tf){

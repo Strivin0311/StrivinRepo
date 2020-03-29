@@ -693,6 +693,8 @@ int rmdir (const char *driver, const char *destDirPath) {
 int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     // TODO in lab2
      FILE *file = NULL;
+     /* add src file*/
+     FILE *srcfile = NULL;
     char tmp = 0;
     int srclength = 0;
     int destlength = 0;
@@ -794,7 +796,12 @@ int cp (const char *driver, const char *srcFilePath, const char *destFilePath) {
     }
 
     /* copy srcFile's data to destFile's */
-    ret = copyData (driver, srcFilePath, &superBlock, &destInode, &destInodeOffset);
+    srcfile = fopen(srcFilePath, "r+");
+    if (srcfile == NULL) {
+        printf("Failed to open srcFile.\n");
+        return -1;
+    }
+    ret = copyData (file, srcfile, &superBlock, &destInode, &destInodeOffset);
     if (ret == -1) {
         printf("Failed to copy data.\n");
         if (srccond == 1)
