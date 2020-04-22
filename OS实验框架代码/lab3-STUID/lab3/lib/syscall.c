@@ -233,25 +233,25 @@ int str2Str(char *string, char *buffer, int size, int count) {
 
 pid_t fork() {
 	// TODO in lab3
-	syscall(SYS_FORK,0,0,0,0,0);
-	return 0;
+	pid_t ret = syscall(SYS_FORK,0,0,0,0,0);
+	return ret;
 }
 
 int exec(const char *filename, char * const argv[]) {
 	// TODO in lab3
-	syscall(SYS_EXEC,0,(uint32_t)filename,(uint32_t)argv,0,0);
+	int ret = syscall(SYS_EXEC,(uint32_t)filename,(uint32_t)argv,0,0,0);
 
-	return 0;
+	return ret;
 }
 
 int sleep(uint32_t time) {
 	// TODO in lab3
-	syscall(SYS_SLEEP,0,time,0,0,0);
-	return 0;
+	int ret = syscall(SYS_SLEEP,time,0,0,0,0);
+	return ret;
 }
 
 int exit() {
 	// TODO in lab3
-	syscall(SYS_EXIT,0,0,0,0,0);
-	return 0;
+	int ret = syscall(SYS_EXIT,0,0,0,0,0);
+	return ret;
 }
