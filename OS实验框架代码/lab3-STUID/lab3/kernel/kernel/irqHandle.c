@@ -116,26 +116,28 @@ void timerHandle(struct TrapFrame *tf) {
 	// and when timeCount over, let minrunnable user pcb be running if exists
 	// or let IDLE be running if it's runnable
 	// otherwise, let current pcb be running again
-	pcb[currentpcb].timeCount++;
-	if(pcb[currentpcb].timeCount == MAX_TIME_COUNT)
+	if(currentpcb!=MAX_PCB_NUM)
 	{
-		if(minrunnable != MAX_PCB_NUM)  // minrunnable user pcb exists
-		{
-			pcb[minrunnable].state = STATE_RUNNING;
-			pcb[minrunnable].timeCount = 0;
-			pcb[currentpcb].state = STATE_RUNNABLE;
-		} 
-		else if(pcb[0].state == STATE_RUNNABLE) // only IDLE runnable
-		{
-			pcb[0].state = STATE_RUNNING;
-			pcb[0].timeCount = 0;
-			pcb[currentpcb].state = STATE_RUNNABLE;
-		}
-		else  // no pcb runnable
-		{
-			pcb[currentpcb].timeCount = 0;
-		}
-		
+		pcb[currentpcb].timeCount++;
+	    if(pcb[currentpcb].timeCount == MAX_TIME_COUNT)
+	    {
+		     if(minrunnable != MAX_PCB_NUM)  // minrunnable user pcb exists
+		     {
+			     pcb[minrunnable].state = STATE_RUNNING;
+			     pcb[minrunnable].timeCount = 0;
+			     pcb[currentpcb].state = STATE_RUNNABLE;
+		     } 
+		     else if(pcb[0].state == STATE_RUNNABLE) // only IDLE runnable
+		     {
+			     pcb[0].state = STATE_RUNNING;
+			     pcb[0].timeCount = 0;
+			     pcb[currentpcb].state = STATE_RUNNABLE;
+		     }
+		     else  // no pcb runnable
+		     {
+			    pcb[currentpcb].timeCount = 0;
+		     }	
+	    }
 	}
 	return;
 }
@@ -202,6 +204,7 @@ void syscallPrint(struct TrapFrame *tf) {
 
 void syscallFork(struct TrapFrame *tf) {
 	// TODO in lab3
+
 	return;
 }
 
