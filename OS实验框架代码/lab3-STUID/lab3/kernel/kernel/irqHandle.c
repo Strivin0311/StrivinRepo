@@ -234,7 +234,67 @@ void syscallPrint(struct TrapFrame *tf) {
 
 void syscallFork(struct TrapFrame *tf) {
 	// TODO in lab3
+	int has = 0;
+	int childpcb = current;
+	for(int i=1;i<MAX_PCB_NUM&&i!=current;i++)
+	{
+		if(pcb[i].state == STATE_DEAD)  // to find one empty pcb
+		{
+			has = 1;
+			childpcb = i;
+			break;
+		}
+	}
 
+
+	if(has == 0)  //no empty, fork failed, 
+	{
+		pcb[current].regs.eax = -1;                      // father return -1
+	}
+	else // found one, fork successed,
+	{
+		pcb[current].regs.eax = childpcb;               // father return childpid
+		
+		// memeory copy
+		for (int j = 0; j < 0x100000; j++) 
+		{
+			*(uint8_t *)(j + (childpcb + 1) * 0x100000) = *(uint8_t *)(j + (current + 1) *0x100000);
+        }
+		// pcb copy, which is none of father's business
+	    pcb[childpcb].stackTop = (uint32_t)&(pcb[childpcb].regs);
+	    pcb[childpcb].prevStackTop = (uint32_t)&(pcb[childpcb].stackTop);
+
+	    pcb[childpcb].state = STATE_RUNNABLE; 
+	    pcb[childpcb].timeCount = 0;  
+	    pcb[childpcb].sleepTime = 0; 
+	    pcb[childpcb].pid = childpcb; 
+
+		pcb[childpcb].regs.eax = 0;                      // child return 0 
+		// TrapFrame copy, which should be worked out
+		pcb[childpcb].regs.cs = USEL(childpcb*2+1);
+	    pcb[childpcb].regs.ss = USEL(childpcb*2+2);
+	    pcb[childpcb].regs.ds = USEL(childpcb*2+2);
+	    pcb[childpcb].regs.es = USEL(childpcb*2+2);
+	    pcb[childpcb].regs.fs = USEL(childpcb*2+2);
+	    pcb[childpcb].regs.gs = USEL(childpcb*2+2);
+		// TrapFrame copy, which can be inherited from father
+		pcb[childpcb].regs.esp = pcb[current].regs.esp;
+		pcb[childpcb].regs.ebp = pcb[current].regs.ebp;
+		pcb[childpcb].regs.edi = pcb[current].regs.edi;
+		pcb[childpcb].regs.esi = pcb[current].regs.esi;
+
+		pcb[childpcb].regs.eflags = pcb[current].regs.eflags;
+		pcb[childpcb].regs.eip = pcb[current].regs.eip;
+
+		pcb[childpcb].regs.ebx = pcb[current].regs.ebx;
+		pcb[childpcb].regs.ecx = pcb[current].regs.ecx;
+		pcb[childpcb].regs.edx = pcb[current].regs.edx;
+
+		pcb[childpcb].regs.error = pcb[current].regs.error;
+		pcb[childpcb].regs.irq = pcb[current].regs.irq;
+		pcb[childpcb].regs.xxx = pcb[current].regs.xxx;
+	}
+	
 	return;
 }
 
