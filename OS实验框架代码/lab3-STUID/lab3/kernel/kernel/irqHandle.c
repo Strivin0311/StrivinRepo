@@ -80,7 +80,7 @@ void syscallHandle(struct TrapFrame *tf) {
 
 void timerHandle(struct TrapFrame *tf) {
 	// TODO in lab3
-	int currentpcb = MAX_PCB_NUM;
+	int currentpcb = MAX_PCB_NUM;  // local current process index
 	int minrunnable = MAX_PCB_NUM;  // the runnable user pcb whose index is min and not IDLE pcb
 
 	for(int i=0; i<MAX_PCB_NUM;i++)
@@ -93,17 +93,7 @@ void timerHandle(struct TrapFrame *tf) {
 			if(pcb[i].sleepTime <= 0)
 			{
 				pcb[i].state = STATE_RUNNABLE;
-				if (i < minrunnable && i != 0){
-				   minrunnable = i;
-			     }
 			}
-		}
-		// runnable pcbs
-		else if (pcb[i].state == STATE_RUNNABLE)
-		{
-			if (i < minrunnable && i != 0){
-				   minrunnable = i;
-			     }
 		}
 		// get running/current pcb 
 		else if(pcb[i].state == STATE_RUNNING)
@@ -111,32 +101,72 @@ void timerHandle(struct TrapFrame *tf) {
 			currentpcb = i;
 		}
 	}
-
 	// current pcb, whose timeCount++
-	// and when timeCount over, let minrunnable user pcb be running if exists
+	// and when timeCount over, switch:
+	// let minrunnable user pcb be running if exists
 	// or let IDLE be running if it's runnable
 	// otherwise, let current pcb be running again
 	if(currentpcb!=MAX_PCB_NUM)
 	{
 		pcb[currentpcb].timeCount++;
-	    if(pcb[currentpcb].timeCount == MAX_TIME_COUNT)
+	    if(pcb[currentpcb].timeCount == MAX_TIME_COUNT) // time to switch
 	    {
+			 for(int i=currentpcb;i<MAX_PCB_NUM;i++)
+	         {
+		        if (pcb[i].state == STATE_RUNNABLE) // find next runnable user pcb after currentpcb
+		        {
+			        if (i < minrunnable){
+				         minrunnable = i;
+			        }
+		        }
+	         }
+
+			 if(minrunnable == MAX_PCB_NUM)
+			 {
+				 for(int i=1;i<currentpcb;i++)
+	             {
+		            if (pcb[i].state == STATE_RUNNABLE) // find next runnable user pcb from beginning
+		            {
+			             if (i < minrunnable){
+				            minrunnable = i;
+			            }
+		            }
+	             }
+			 }
+
 		     if(minrunnable != MAX_PCB_NUM)  // minrunnable user pcb exists
 		     {
 			     pcb[minrunnable].state = STATE_RUNNING;
 			     pcb[minrunnable].timeCount = 0;
 			     pcb[currentpcb].state = STATE_RUNNABLE;
+				 currentpcb = minrunnable;
 		     } 
 		     else if(pcb[0].state == STATE_RUNNABLE) // only IDLE runnable
 		     {
 			     pcb[0].state = STATE_RUNNING;
 			     pcb[0].timeCount = 0;
 			     pcb[currentpcb].state = STATE_RUNNABLE;
+				 currentpcb = 0;
 		     }
 		     else  // no pcb runnable
 		     {
 			    pcb[currentpcb].timeCount = 0;
 		     }	
+
+			 current = currentpcb; // modify global current process index
+
+			 // switch process's stack and registers
+		     uint32_t tmpStackTop = pcb[currentpcb].stackTop;
+             pcb[currentpcb].stackTop = pcb[currentpcb].prevStackTop;
+             tss.esp0 = (uint32_t)&(pcb[currentpcb].stackTop);  // set tss.esp0 where has kernel stack
+             asm volatile("movl %0, %%esp"::"m"(tmpStackTop)); // switch kernel stack
+             asm volatile("popl %gs");
+             asm volatile("popl %fs");
+             asm volatile("popl %es");
+             asm volatile("popl %ds");
+             asm volatile("popal");
+             asm volatile("addl $8, %esp");
+             asm volatile("iret");
 	    }
 	}
 	return;
