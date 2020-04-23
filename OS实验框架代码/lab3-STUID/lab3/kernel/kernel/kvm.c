@@ -76,7 +76,7 @@ int loadElf(const char *filename, uint32_t physAddr, uint32_t *entry) {
 	int j=0;
 	int success = -1;
 	uint32_t phoff = 0; // program header offset
-	uint32_t phnumber = 0;  // number of program headers
+	uint32_t ephoff = 0;  // end of program headers
 	uint32_t offset = 0; //section offset
 	uint32_t vaddr = 0;  // virtual address
 	uint32_t paddr = 0;  // physical address
@@ -98,16 +98,18 @@ int loadElf(const char *filename, uint32_t physAddr, uint32_t *entry) {
 		}
 	}
 
-	entry = ((struct ELFHeader*)elf)->entry;
+	entry = (uint32_t* )(((struct ELFHeader*)elf)->entry);
 	phoff = ((struct ELFHeader *)elf)->phoff;
-	phnumber = ((struct ELFHeader*)elf)->phnum;
-
+    ephoff = phoff + ((struct ELFHeader *)elf)->phnum;
 	success = -1;
 	
-	for(;phoff<phnumber;phoff++)
+	for(;phoff<ephoff;phoff++)
 	{
-		if(((struct ProgramHeader *)(elf + phoff))->type == 0x1)  // excutable segment
+		if(((struct ProgramHeader *)(elf + phoff))->type == 1)  // excutable segment
 		{
+			//putString("loadelf's success is ");
+	        //putInt(success);
+	        //putString("\n");
 			success = 0;
 			offset = ((struct ProgramHeader *)(elf + phoff))->off;
 			vaddr = ((struct ProgramHeader *)(elf + phoff))->vaddr;
@@ -128,6 +130,7 @@ int loadElf(const char *filename, uint32_t physAddr, uint32_t *entry) {
 		}
 
 	}
+
 	if(success == -1)
 	{
 		return -1; // no excutable segment

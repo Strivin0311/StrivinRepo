@@ -80,20 +80,30 @@ void syscallHandle(struct TrapFrame *tf) {
 
 void timerHandle(struct TrapFrame *tf) {
 	// TODO in lab3
+	//putString("get in time break\n");
 	int minrunnable = MAX_PCB_NUM;  // the runnable user pcb whose index is min and not IDLE pcb
 	int i=0;
     // find blocked pcbs, whose sleeptime--, 
     // and when sleeptime = 0, turn to runnable pcb
 	for(i=0; i<MAX_PCB_NUM;i++)
 	{
-	    
 		if (pcb[i].state == STATE_BLOCKED) 
 		{
-			pcb[i].sleepTime--;
+			//putString("pcb[i]'s pid is ");
+			//putInt(i);
+			//putString("\n");
 			if(pcb[i].sleepTime == 0)
 			{
 				pcb[i].state = STATE_RUNNABLE;
 			}
+			else
+			{
+				pcb[i].sleepTime--;
+				//putString("now its sleepTime is ");
+			    //putInt(pcb[i].sleepTime);
+			    //putString("\n");
+			}
+			
 		}
 	}
 	// current pcb, whose timeCount++
@@ -101,7 +111,6 @@ void timerHandle(struct TrapFrame *tf) {
 	// let minrunnable user pcb be running if exists
 	// or let IDLE be running if it's runnable
 	// otherwise, let current pcb be running again
-	pcb[current].timeCount++;
 	if(pcb[current].timeCount == MAX_TIME_COUNT) 
 	{
 		      // find next runnable user pcb after currentpcb
@@ -130,23 +139,42 @@ void timerHandle(struct TrapFrame *tf) {
              // minrunnable user pcb exists
 		     if(minrunnable != MAX_PCB_NUM)  
 		     {
+				 // switch current pcb state
+				 if(pcb[current].state == STATE_RUNNING)
+				       pcb[current].state = STATE_RUNNABLE;
+				 else if(pcb[current].state == STATE_BLOCKED)
+				       pcb[current].state = STATE_BLOCKED;
+				 else if(pcb[current].state == STATE_DEAD)
+				       pcb[current].state = STATE_DEAD;	 
+				 else if(pcb[current].state == STATE_RUNNABLE)
+				       pcb[current].state = STATE_RUNNABLE;  
+                 // set next pcb to be current
 			     pcb[minrunnable].state = STATE_RUNNING;
 			     pcb[minrunnable].timeCount = 0;
-			     pcb[current].state = STATE_RUNNABLE;
 				 current = minrunnable;
 		     } 
 			 // only IDLE runnable
 		     else if(pcb[0].state == STATE_RUNNABLE) 
 		     {
+				 // switch current pcb state
+				 if(pcb[current].state == STATE_RUNNING)
+				       pcb[current].state = STATE_RUNNABLE;
+				 else if(pcb[current].state == STATE_BLOCKED)
+				       pcb[current].state = STATE_BLOCKED;
+				 else if(pcb[current].state == STATE_DEAD)
+				       pcb[current].state = STATE_DEAD;	 
+				 else if(pcb[current].state == STATE_RUNNABLE)
+				       pcb[current].state = STATE_RUNNABLE; 
+				 // set next pcb to be current
 			     pcb[0].state = STATE_RUNNING;
 			     pcb[0].timeCount = 0;
-			     pcb[current].state = STATE_RUNNABLE;
 				 current = 0;
 		     }
 			 // no pcb runnable
 		     else  
 		     {
-			    pcb[current].timeCount = 0;
+				 pcb[current].state = STATE_RUNNING;
+			     pcb[current].timeCount = 0;
 		     }	
 
 			 // switch process's stack and registers
@@ -162,6 +190,11 @@ void timerHandle(struct TrapFrame *tf) {
              asm volatile("addl $8, %esp");
              asm volatile("iret");
 	}
+	else
+	{
+	    pcb[current].timeCount++;
+	}
+	
 	return;
 }
 
@@ -230,7 +263,7 @@ void syscallFork(struct TrapFrame *tf) {
 	int has = 0;
 	int i= 0; int j=0;
 	int childpcb = current;
-	for(i=1;i<MAX_PCB_NUM&&i!=current;i++)
+	for(i=1;i<MAX_PCB_NUM;i++)
 	{
 		if(pcb[i].state == STATE_DEAD)  // to find one empty pcb
 		{
@@ -239,7 +272,6 @@ void syscallFork(struct TrapFrame *tf) {
 			break;
 		}
 	}
-
 
 	if(has == 0)  //no empty, fork failed, 
 	{
@@ -318,8 +350,15 @@ void syscallExec(struct TrapFrame *tf) {
 		count++;
 	}
 
+	//putString("Character[] is:\n ");
+	//putString(character);
+
 	// loadElf
     ret = loadElf(character,(current + 1) * 0x100000, &entry);
+
+	//putString("loadelf's ret is ");
+	//putInt(ret);
+	//putString("\n");
 
 	// return
 	if(ret == -1)  // load failed
@@ -335,9 +374,13 @@ void syscallExec(struct TrapFrame *tf) {
 
 void syscallSleep(struct TrapFrame *tf) {
 	// TODO in lab3
+	//putString("tf->ecx = ");
+	//putInt(tf->ecx);
+	//putString("\n");
 	if(tf->ecx > 0)
 	{
 		pcb[current].state = STATE_BLOCKED;  // state -> blocked
+		pcb[current].timeCount = MAX_TIME_COUNT;
 		pcb[current].sleepTime = tf->ecx; // ecx = time (from syscall.c/sleep(time))
 	    asm volatile("int $0x20");  // call timerHandle()
 	}
