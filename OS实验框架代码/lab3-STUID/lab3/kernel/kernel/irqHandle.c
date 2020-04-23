@@ -350,15 +350,8 @@ void syscallExec(struct TrapFrame *tf) {
 		count++;
 	}
 
-	//putString("Character[] is:\n ");
-	//putString(character);
-
 	// loadElf
     ret = loadElf(character,(current + 1) * 0x100000, &entry);
-
-	//putString("loadelf's ret is ");
-	//putInt(ret);
-	//putString("\n");
 
 	// return
 	if(ret == -1)  // load failed
@@ -374,9 +367,6 @@ void syscallExec(struct TrapFrame *tf) {
 
 void syscallSleep(struct TrapFrame *tf) {
 	// TODO in lab3
-	//putString("tf->ecx = ");
-	//putInt(tf->ecx);
-	//putString("\n");
 	if(tf->ecx > 0)
 	{
 		pcb[current].state = STATE_BLOCKED;  // state -> blocked
@@ -390,6 +380,7 @@ void syscallSleep(struct TrapFrame *tf) {
 void syscallExit(struct TrapFrame *tf) {
 	// TODO in lab3
 	pcb[current].state = STATE_DEAD;
+	pcb[current].timeCount = MAX_TIME_COUNT;
 	asm volatile("int $0x20");
 	return;
 }

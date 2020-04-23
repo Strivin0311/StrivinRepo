@@ -245,7 +245,6 @@ int exec(const char *filename, char * const argv[]) {
 
 int sleep(uint32_t time) {
 	// TODO in lab3
-	//printf("time is %d\n",time);
 	int ret = syscall(SYS_SLEEP,time,0,0,0,0);
 	return ret;
 }

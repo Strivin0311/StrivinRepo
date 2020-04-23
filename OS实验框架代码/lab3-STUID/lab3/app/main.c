@@ -5,7 +5,6 @@ int data = 0;
 
 int uEntry(void) {
 	int ret = fork();
-	//printf("fork out with ret = %d\n", ret);
 	int i = 8;
 	if (ret == 0) {
 		data = 2;
