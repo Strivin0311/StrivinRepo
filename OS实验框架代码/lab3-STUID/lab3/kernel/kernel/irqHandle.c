@@ -81,10 +81,10 @@ void syscallHandle(struct TrapFrame *tf) {
 void timerHandle(struct TrapFrame *tf) {
 	// TODO in lab3
 	int minrunnable = MAX_PCB_NUM;  // the runnable user pcb whose index is min and not IDLE pcb
-
+	int i=0;
     // find blocked pcbs, whose sleeptime--, 
     // and when sleeptime = 0, turn to runnable pcb
-	for(int i=0; i<MAX_PCB_NUM;i++)
+	for(i=0; i<MAX_PCB_NUM;i++)
 	{
 	    
 		if (pcb[i].state == STATE_BLOCKED) 
@@ -105,7 +105,7 @@ void timerHandle(struct TrapFrame *tf) {
 	if(pcb[current].timeCount == MAX_TIME_COUNT) 
 	{
 		      // find next runnable user pcb after currentpcb
-			 for(int i=current;i<MAX_PCB_NUM;i++)
+			 for(i=current;i<MAX_PCB_NUM;i++)
 	         {
 		        if (pcb[i].state == STATE_RUNNABLE) 
 		        {
@@ -117,7 +117,7 @@ void timerHandle(struct TrapFrame *tf) {
 			 // find next runnable user pcb from beginning
 			 if(minrunnable == MAX_PCB_NUM)
 			 {
-				 for(int i=1;i<current;i++)
+				 for(i=1;i<current;i++)
 	             {
 		            if (pcb[i].state == STATE_RUNNABLE) 
 		            {
@@ -228,8 +228,9 @@ void syscallPrint(struct TrapFrame *tf) {
 void syscallFork(struct TrapFrame *tf) {
 	// TODO in lab3
 	int has = 0;
+	int i= 0; int j=0;
 	int childpcb = current;
-	for(int i=1;i<MAX_PCB_NUM&&i!=current;i++)
+	for(i=1;i<MAX_PCB_NUM&&i!=current;i++)
 	{
 		if(pcb[i].state == STATE_DEAD)  // to find one empty pcb
 		{
@@ -249,7 +250,7 @@ void syscallFork(struct TrapFrame *tf) {
 		pcb[current].regs.eax = childpcb;               // father return childpid
 
 		// memeory copy
-		for (int j = 0; j < 0x100000; j++) 
+		for (j = 0; j < 0x100000; j++) 
 		{
 			*(uint8_t *)(j + (childpcb + 1) * 0x100000) = *(uint8_t *)(j + (current + 1) *0x100000);
         }
@@ -293,7 +294,42 @@ void syscallFork(struct TrapFrame *tf) {
 
 void syscallExec(struct TrapFrame *tf) {
 	// TODO in lab3
-	// hint: ret = loadElf(tmp, (current + 1) * 0x100000, &entry);
+	// read filename
+	int sel = tf->ds; 
+	char *str = (char *)tf->ecx;  // str: filename
+	char character[200];  // filename copy
+	uint32_t count = 0;
+	int i=0; 
+	int ret = -1;
+	uint32_t entry = 0;
+
+	asm volatile("movw %0, %%es"::"m"(sel));
+	for (i = 0; i < 200; i++) {
+		asm volatile("movb %%es:(%1), %0":"=r"(character[count]):"r"(str + i));
+		if (character[count] == '\n') 
+		{
+			count--;
+		}
+		if(character[count] == '\0')
+		{
+			count++;
+			break;
+		}
+		count++;
+	}
+
+	// loadElf
+    ret = loadElf(character,(current + 1) * 0x100000, &entry);
+
+	// return
+	if(ret == -1)  // load failed
+	{
+		tf->eax = -1;  // return -1
+	}
+	else if(ret == 0) // load succeeded
+	{
+		tf->eip = entry;  // no return
+	}
 	return;
 }
 

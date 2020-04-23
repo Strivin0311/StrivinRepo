@@ -70,6 +70,69 @@ void initFS () {
 
 int loadElf(const char *filename, uint32_t physAddr, uint32_t *entry) {
 	// TODO in lab3
+	Inode inode;   // file inode
+	int inodeOffset = 0;
+	int i=0; 
+	int j=0;
+	int success = -1;
+	uint32_t phoff = 0; // program header offset
+	uint32_t phnumber = 0;  // number of program headers
+	uint32_t offset = 0; //section offset
+	uint32_t vaddr = 0;  // virtual address
+	uint32_t paddr = 0;  // physical address
+	uint32_t filesz = 0;  // file size
+	uint32_t memsz = 0;  // memory size
+	uint32_t elf = 0; // physical memory addr to load
+
+	success = readInode(&sBlock, &inode, &inodeOffset, filename);
+	if(success == -1)  //readinode failed
+	{
+		return -1;
+	}
+
+	for (i = 0; i < inode.blockCount; i++) {
+		success = readBlock(&sBlock, &inode, i, (uint8_t *)(elf + i * sBlock.blockSize));
+		if(success == -1)
+		{
+			return -1;  // readblock failed
+		}
+	}
+
+	entry = ((struct ELFHeader*)elf)->entry;
+	phoff = ((struct ELFHeader *)elf)->phoff;
+	phnumber = ((struct ELFHeader*)elf)->phnum;
+
+	success = -1;
+	
+	for(;phoff<phnumber;phoff++)
+	{
+		if(((struct ProgramHeader *)(elf + phoff))->type == 0x1)  // excutable segment
+		{
+			success = 0;
+			offset = ((struct ProgramHeader *)(elf + phoff))->off;
+			vaddr = ((struct ProgramHeader *)(elf + phoff))->vaddr;
+			filesz = ((struct ProgramHeader *)(elf + phoff))->filesz;
+			memsz = ((struct ProgramHeader *)(elf + phoff))->memsz;
+
+			paddr = vaddr + physAddr;   
+			for (j = 0; j < filesz; j++) 
+		    {
+				// [elf+offset,elf+offset+filesz) --> [paddr,paddr+filesz)
+			    *(uint8_t *)(paddr+j) = *(uint8_t *)(elf+offset+j);  
+            }
+			for(j=filesz;j<memsz;j++)
+			{
+				// [paddr+filesz,paddr+memsz) = 0
+				*(uint8_t *)(paddr+j) = 0x0;
+			}
+		}
+
+	}
+	if(success == -1)
+	{
+		return -1; // no excutable segment
+	}
+
 	return 0;
 }
 
