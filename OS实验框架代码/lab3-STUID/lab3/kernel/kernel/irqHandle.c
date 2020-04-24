@@ -252,6 +252,7 @@ void syscallPrint(struct TrapFrame *tf) {
 				}
 			}
 		}
+		//asm volatile("int $0x20"); // Test syscallHandle break by timeHandle
 	}
 	
 	updateCursor(displayRow, displayCol);
@@ -282,10 +283,16 @@ void syscallFork(struct TrapFrame *tf) {
 		pcb[current].regs.eax = childpcb;               // father return childpid
 
 		// memeory copy
+		enableInterrupt();
 		for (j = 0; j < 0x100000; j++) 
 		{
 			*(uint8_t *)(j + (childpcb + 1) * 0x100000) = *(uint8_t *)(j + (current + 1) *0x100000);
+			if(j>0x100 && !(j%0x100))
+			{
+				asm volatile("int $0x20"); //XXX Testing irqTimer during syscall
+			}
         }
+		disableInterrupt();
 		// pcb copy, which is none of father's business
 	    pcb[childpcb].stackTop = (uint32_t)&(pcb[childpcb].regs);
 	    pcb[childpcb].prevStackTop = (uint32_t)&(pcb[childpcb].stackTop);
