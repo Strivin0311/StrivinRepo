@@ -99,9 +99,7 @@ void timerHandle(struct TrapFrame *tf) {
 			else
 			{
 				pcb[i].sleepTime--;
-				//putString("now its sleepTime is ");
-			    //putInt(pcb[i].sleepTime);
-			    //putString("\n");
+				
 			}
 			
 		}
@@ -111,6 +109,9 @@ void timerHandle(struct TrapFrame *tf) {
 	// let minrunnable user pcb be running if exists
 	// or let IDLE be running if it's runnable
 	// otherwise, let current pcb be running again
+	putString("now current is ");
+	putInt(current);
+	putString("\n");
 	if(pcb[current].timeCount == MAX_TIME_COUNT) 
 	{
 		      // find next runnable user pcb after currentpcb
@@ -153,28 +154,19 @@ void timerHandle(struct TrapFrame *tf) {
 			     pcb[minrunnable].timeCount = 0;
 				 current = minrunnable;
 		     } 
-			 // only IDLE runnable
-		     else if(pcb[0].state == STATE_RUNNABLE) 
+			 // only current runnable
+		     else if(pcb[current].state == STATE_RUNNABLE ||pcb[current].state == STATE_RUNNING ) 
 		     {
-				 // switch current pcb state
-				 if(pcb[current].state == STATE_RUNNING)
-				       pcb[current].state = STATE_RUNNABLE;
-				 else if(pcb[current].state == STATE_BLOCKED)
-				       pcb[current].state = STATE_BLOCKED;
-				 else if(pcb[current].state == STATE_DEAD)
-				       pcb[current].state = STATE_DEAD;	 
-				 else if(pcb[current].state == STATE_RUNNABLE)
-				       pcb[current].state = STATE_RUNNABLE; 
+				 pcb[current].state = STATE_RUNNING;
+			     pcb[current].timeCount = 0;
+		     }
+			 // no user pcb runnable
+		     else  
+		     {
 				 // set next pcb to be current
 			     pcb[0].state = STATE_RUNNING;
 			     pcb[0].timeCount = 0;
 				 current = 0;
-		     }
-			 // no pcb runnable
-		     else  
-		     {
-				 pcb[current].state = STATE_RUNNING;
-			     pcb[current].timeCount = 0;
 		     }	
 
 			 // switch process's stack and registers
