@@ -384,7 +384,31 @@ void syscallSem(struct TrapFrame *tf) {
 
 void syscallSemInit(struct TrapFrame *tf) {
 	// TODO in lab4
+	// find an empty Semaphore in sem
+	int find = -1;
+	for(int i=0;i<MAX_SEM_NUM;i++)
+	{
+		if(sem[i].state == 0)
+        {
+			find = i;
+			break;
+		}
+	}
+
+	// if not found, return -1
+	if(find == -1)
+	{
+		tf->eax = -1;  return;
+	}
+
+	// if found, init sem[find] and return 0
+	sem[find].state = 1;
+	sem[find].value = tf->edx;
+	sem[find].pcb.next = &(sem[find].pcb);
+	sem[find].pcb.prev = &(sem[find].pcb);
+	tf->eax = 0;
 	return;
+	
 }
 
 void syscallSemWait(struct TrapFrame *tf) {
