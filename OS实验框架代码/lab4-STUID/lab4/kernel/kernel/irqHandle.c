@@ -260,6 +260,50 @@ void syscallRead(struct TrapFrame *tf) {
 
 void syscallReadStdIn(struct TrapFrame *tf) {
 	// TODO in lab4
+	// if dev not busy, block itself
+	if(dev[STD_IN].value == 0)
+	{
+		dev[STD_IN].value -= 1;
+		pcb[current].blocked.next = dev[STD_IN].pcb.next;
+ 		pcb[current].blocked.prev = &(dev[STD_IN].pcb);
+ 		dev[STD_IN].pcb.next = &(pcb[current].blocked);
+ 		(pcb[current].blocked.next)->prev = &(pcb[current].blocked);
+
+		pcb[current].state = STATE_BLOCKED;
+		asm volatile("int $0x20");
+
+		// and read keybuffer to user str
+		int sel = tf->ds;
+		char *str = (char *)tf->edx;
+		int readsize = (uint32_t)tf->ebx;
+		int getsize = 0;
+		char character;
+		asm volatile("movw %0, %%es"::"m"(sel));
+		for(; getsize < readsize-1 ; getsize++)
+		{
+			if(bufferHead != bufferTail)
+			{	
+				character = keyBuffer[bufferHead];
+				if(character!=0)
+				{
+					asm volatile("movb %0, %%es:(%1)"::"r"(character),"r"(str + getsize));
+				}
+				bufferHead += 1;
+				bufferHead %= MAX_KEYBUFFER_SIZE;
+			}
+			else
+				break;
+		}
+		// to add '/0' to the end of str 
+		asm volatile("movb $0x00, %%es:(%0)"::"r"(str+getsize));
+		// return the gotten size
+		tf->eax = getsize;
+	}
+	// if dev busy, return -1
+	else if(dev[STD_IN].value < 0)
+	{
+		tf->eax = -1
+	}
 	return;
 }
 
@@ -424,7 +468,8 @@ void syscallSemWait(struct TrapFrame *tf) {
  			pcb[current].blocked.prev = &(sem[i].pcb);
  			sem[i].pcb.next = &(pcb[current].blocked);
  			(pcb[current].blocked.next)->prev = &(pcb[current].blocked);
-			 pcb[current].state = STATE_BLOCKED;
+			pcb[current].state = STATE_BLOCKED;
+			asm volatile("int $0x20");
 		}
 		tf->eax = 0;
 	}
