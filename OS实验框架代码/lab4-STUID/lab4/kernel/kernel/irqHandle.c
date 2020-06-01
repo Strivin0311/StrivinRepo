@@ -255,6 +255,20 @@ void syscallWriteStdOut(struct TrapFrame *tf) {
 
 void syscallWriteShMem(struct TrapFrame *tf) {
 	// TODO in lab4
+	// copy str to ShMen
+	int sel = tf->ds;	
+	int size = tf->ebx;
+	int index = tf->esi;
+	char *str = (char *)tf->edx;
+	char character;
+	asm volatile("movw %0, %%es"::"m"(sel));
+
+	for(int i=0;i<size;i++)
+	{
+		asm volatile("movb %%es:(%1), %0":"=r"(character):"r"(str + i));
+		shMem[index+i] = character;
+	}
+	
 	return;
 }
 
@@ -327,6 +341,20 @@ void syscallReadStdIn(struct TrapFrame *tf) {
 
 void syscallReadShMem(struct TrapFrame *tf) {
 	// TODO in lab4
+	// copy str to ShMen
+	int sel = tf->ds;	
+	int size = tf->ebx;
+	int index = tf->esi;
+	char *str = (char *)tf->edx;
+	char character;
+	asm volatile("movw %0, %%es"::"m"(sel));
+
+	for(int i=0;i<size;i++)
+	{
+		character = shMem[index+i];
+		asm volatile("movb %0, %%es:(%1)"::"r"(character),"r"(str+i));
+	}
+	
 	return;
 }
 
