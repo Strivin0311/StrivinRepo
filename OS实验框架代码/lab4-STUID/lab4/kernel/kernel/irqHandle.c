@@ -403,7 +403,7 @@ void syscallSemInit(struct TrapFrame *tf) {
 
 	// if found, init sem[find] and return 0
 	sem[find].state = 1;
-	sem[find].value = tf->edx;
+	sem[find].value = (uint32_t)tf->edx;
 	sem[find].pcb.next = &(sem[find].pcb);
 	sem[find].pcb.prev = &(sem[find].pcb);
 	tf->eax = 0;
@@ -413,16 +413,61 @@ void syscallSemInit(struct TrapFrame *tf) {
 
 void syscallSemWait(struct TrapFrame *tf) {
 	// TODO in lab4
+	int i = (uint32_t)tf->edx;
+	// decrease sem[i] and block itself if sem[i] busy
+	if(i>=0 && i< MAX_SEM_NUM)
+	{
+		sem[i].value -= 1;
+		if(sem[i].value <0)
+		{
+			pcb[current].blocked.next = sem[i].pcb.next;
+ 			pcb[current].blocked.prev = &(sem[i].pcb);
+ 			sem[i].pcb.next = &(pcb[current].blocked);
+ 			(pcb[current].blocked.next)->prev = &(pcb[current].blocked);
+			 pcb[current].state = STATE_BLOCKED;
+		}
+		tf->eax = 0;
+	}
+	else
+		tf->eax = -1;
 	return;
 }
 
 void syscallSemPost(struct TrapFrame *tf) {
 	// TODO in lab4
+	int i = (uint32_t)tf->edx;
+	// increase sem[i] and release one pcb if sem[i] busy
+	if(i>=0 && i< MAX_SEM_NUM)
+	{
+		sem[i].value += 1;
+		if(sem[i].value <= 0)
+		{
+			int pt = (ProcessTable*)((uint32_t)(sem[i].pcb.prev) - (uint32_t)&(((ProcessTable*)0)->blocked));
+ 			sem[i].pcb.prev = (sem[i].pcb.prev)->prev;
+ 			(sem[i].pcb.prev)->next = &(sem[i].pcb);
+			pcb[pt].state = STATE_RUNNABLE;
+		}
+		tf->eax = 0;
+	}
+	else
+		tf->eax = -1;
 	return;
 }
 
 void syscallSemDestroy(struct TrapFrame *tf) {
 	// TODO in lab4
+	// destroy the sem
+	int i = (uint32_t)tf->edx;
+	if(i>=0 && i< MAX_SEM_NUM)
+	{
+		if(sem[i].state == 1)
+		{
+			sem[i].state = 0;
+			tf->eax = 0;
+			return;
+		}
+	}
+	tf->eax = -1;
 	return;
 }
 
