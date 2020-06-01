@@ -176,6 +176,23 @@ void timerHandle(struct TrapFrame *tf) {
 
 void keyboardHandle(struct TrapFrame *tf) {
 	// TODO in lab4
+	// read keycode from keyborad
+	uint32_t keycode = getKeyCode();
+	if(keycode != 0)
+	{
+		keyBuffer[bufferTail++] = keycode;
+		bufferTail %= MAX_KEYBUFFER_SIZE;
+		// if dev was busy, release the waitting process
+		if(dev[STD_IN].value < 0)
+		{
+			dev[STD_IN].value += 1;
+			ProcessTable* pt = (ProcessTable*)((uint32_t)(dev[STD_IN].pcb.prev) - 
+			(uint32_t)&(((ProcessTable*)0)->blocked));
+ 			dev[STD_IN].pcb.prev = (dev[STD_IN].pcb.prev)->prev;
+ 			(dev[STD_IN].pcb.prev)->next = &(dev[STD_IN].pcb);
+			pt->state = STATE_RUNNABLE;
+		}
+	}
 	return;
 }
 
@@ -283,7 +300,8 @@ void syscallReadStdIn(struct TrapFrame *tf) {
 		{
 			if(bufferHead != bufferTail)
 			{	
-				character = keyBuffer[bufferHead];
+				character = getChar(keyBuffer[bufferHead]);
+				// putChar(character);
 				if(character!=0)
 				{
 					asm volatile("movb %0, %%es:(%1)"::"r"(character),"r"(str + getsize));
@@ -487,10 +505,11 @@ void syscallSemPost(struct TrapFrame *tf) {
 		sem[i].value += 1;
 		if(sem[i].value <= 0)
 		{
-			int pt = (ProcessTable*)((uint32_t)(sem[i].pcb.prev) - (uint32_t)&(((ProcessTable*)0)->blocked));
+			ProcessTable* pt = (ProcessTable*)((uint32_t)(sem[i].pcb.prev) - 
+			(uint32_t)&(((ProcessTable*)0)->blocked));
  			sem[i].pcb.prev = (sem[i].pcb.prev)->prev;
  			(sem[i].pcb.prev)->next = &(sem[i].pcb);
-			pcb[pt].state = STATE_RUNNABLE;
+			pt->state = STATE_RUNNABLE;
 		}
 		tf->eax = 0;
 	}
