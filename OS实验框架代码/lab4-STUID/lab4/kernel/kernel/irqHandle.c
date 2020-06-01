@@ -194,6 +194,7 @@ void keyboardHandle(struct TrapFrame *tf) {
 		}
 	}
 	return;
+
 }
 
 void syscallWrite(struct TrapFrame *tf) {
@@ -255,7 +256,7 @@ void syscallWriteStdOut(struct TrapFrame *tf) {
 
 void syscallWriteShMem(struct TrapFrame *tf) {
 	// TODO in lab4
-	// copy str to ShMen
+	// copy str to ShMem
 	int sel = tf->ds;	
 	int size = tf->ebx;
 	int index = tf->esi;
@@ -310,15 +311,16 @@ void syscallReadStdIn(struct TrapFrame *tf) {
 		int getsize = 0;
 		char character;
 		asm volatile("movw %0, %%es"::"m"(sel));
-		for(; getsize < readsize-1 ; getsize++)
+		for(; getsize < readsize-1 ;)
 		{
 			if(bufferHead != bufferTail)
 			{	
 				character = getChar(keyBuffer[bufferHead]);
-				// putChar(character);
+				putChar(character);
 				if(character!=0)
 				{
 					asm volatile("movb %0, %%es:(%1)"::"r"(character),"r"(str + getsize));
+					getsize++;
 				}
 				bufferHead += 1;
 				bufferHead %= MAX_KEYBUFFER_SIZE;
@@ -334,14 +336,14 @@ void syscallReadStdIn(struct TrapFrame *tf) {
 	// if dev busy, return -1
 	else if(dev[STD_IN].value < 0)
 	{
-		tf->eax = -1
+		tf->eax = -1;
 	}
 	return;
 }
 
 void syscallReadShMem(struct TrapFrame *tf) {
 	// TODO in lab4
-	// copy str to ShMen
+	// copy ShMem to str
 	int sel = tf->ds;	
 	int size = tf->ebx;
 	int index = tf->esi;
@@ -493,12 +495,11 @@ void syscallSemInit(struct TrapFrame *tf) {
 
 	// if found, init sem[find] and return 0
 	sem[find].state = 1;
-	sem[find].value = (uint32_t)tf->edx;
+	sem[find].value = (int32_t)tf->edx;
 	sem[find].pcb.next = &(sem[find].pcb);
 	sem[find].pcb.prev = &(sem[find].pcb);
-	tf->eax = 0;
+	tf->eax = find;
 	return;
-	
 }
 
 void syscallSemWait(struct TrapFrame *tf) {
